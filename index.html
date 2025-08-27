@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Admin Panel - WD</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+
+  <style>
+    :root {
+      --bg: #f4f7fa;
+      --text: #000;
+      --card: #fff;
+      --header: #2196F3;
+      --btn-approve: #4CAF50;
+      --btn-reject: #f44336;
+    }
+    body.dark {
+      --bg: #121212;
+      --text: #f0f0f0;
+      --card: #1e1e1e;
+      --header: #333;
+    }
+    body {
+      font-family: Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      margin: 0;
+      padding: 0;
+    }
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 15px;
+      background: var(--header);
+      color: white;
+    }
+    .theme-toggle { cursor: pointer; font-size: 20px; }
+    .container { padding: 15px; }
+    .card {
+      background: var(--card);
+      border-radius: 12px;
+      padding: 15px;
+      margin-bottom: 15px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    .btn {
+      padding: 8px 12px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      color: white;
+      margin-right: 8px;
+    }
+    .approve { background: var(--btn-approve); }
+    .reject { background: var(--btn-reject); }
+    .status { font-weight: bold; margin-top: 5px; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h2>Admin Panel WD</h2>
+    <div class="theme-toggle" id="themeToggle">🌙</div>
+  </header>
+
+  <div class="container" id="requests"></div>
+
+  <script>
+    // 🔥 Firebase Config
+    const firebaseConfig = {
+      apiKey: "AIzaSyCrFmaHbmL299cum51EtJIjt5NpukpTmho",
+      authDomain: "penyimpanansaldo-280df.firebaseapp.com",
+      databaseURL: "https://penyimpanansaldo-280df-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "penyimpanansaldo-280df",
+    };
+    firebase.initializeApp(firebaseConfig);
+    const fs = firebase.firestore();
+
+    const container=document.getElementById("requests");
+
+    function renderRequests(){
+      fs.collection("withdrawRequests").orderBy("created","desc").onSnapshot(snaps=>{
+        container.innerHTML="";
+        snaps.forEach(doc=>{
+          let wd=doc.data();
+          let status = wd.status==="approved"?"✅ Sukses":
+                       wd.status==="rejected"?"❌ Ditolak":"⏳ Pending";
+
+          let div=document.createElement("div");
+          div.className="card";
+          div.innerHTML=`
+            <b>${wd.email}</b><br>
+            ${wd.type} - ${wd.number}<br>
+            Jumlah: Rp${wd.amount}<br>
+            <span class="status">${status}</span><br>
+          `;
+
+          if(wd.status==="pending"){
+            let approve=document.createElement("button");
+            approve.innerText="Approve";
+            approve.className="btn approve";
+            approve.onclick=()=>{ fs.collection("withdrawRequests").doc(doc.id).update({status:"approved"}); };
+
+            let reject=document.createElement("button");
+            reject.innerText="Reject";
+            reject.className="btn reject";
+            reject.onclick=()=>{ fs.collection("withdrawRequests").doc(doc.id).update({status:"rejected"}); };
+
+            div.appendChild(approve);
+            div.appendChild(reject);
+          }
+
+          container.appendChild(div);
+        });
+      });
+    }
+    renderRequests();
+
+    // ✅ Tema toggle
+    const themeToggle=document.getElementById("themeToggle");
+    if(localStorage.getItem("theme")==="dark"){document.body.classList.add("dark"); themeToggle.innerText="☀️";}
+    themeToggle.onclick=()=>{
+      document.body.classList.toggle("dark");
+      if(document.body.classList.contains("dark")){
+        themeToggle.innerText="☀️"; localStorage.setItem("theme","dark");
+      } else {
+        themeToggle.innerText="🌙"; localStorage.setItem("theme","light");
+      }
+    };
+  </script>
+
+</body>
+</html>
